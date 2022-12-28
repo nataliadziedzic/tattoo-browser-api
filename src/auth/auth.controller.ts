@@ -1,4 +1,5 @@
 import { Body, Controller, Post, HttpCode, Param } from '@nestjs/common';
+import { userType } from '../types';
 import { ClientDto } from '../dto/client.dto';
 import { StudioDto } from '../dto/studio.dto';
 import { AuthService } from './auth.service';
@@ -20,8 +21,7 @@ export class AuthController {
 
   @HttpCode(200)
   @Post(':type/signin')
-  studioSignIn(@Body() dto: AuthDto, @Param('type') type: 'studio' | 'client') {
-    const isStudio = type === 'studio';
-    return this.authService.signin(dto, isStudio);
+  studioSignIn(@Body() dto: AuthDto, @Param('type') type: userType) {
+    return this.authService.signin(dto, type);
   }
 }

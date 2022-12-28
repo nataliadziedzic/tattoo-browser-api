@@ -1,16 +1,22 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { Client, Studio } from '@prisma/client';
+import { ConfigService } from '@nestjs/config';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 import * as argon from 'argon2';
 
 import { PrismaService } from '../prisma/prisma.service';
-import { ClientDto } from '../dto/client.dto';
-import { StudioDto } from '../dto/studio.dto';
+import { ClientDto, StudioDto } from '../dto';
 import { AuthDto } from './dto/auth.dto';
+import { userType } from '../types';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwt: JwtService,
+    private config: ConfigService,
+  ) {}
 
   async signupAsStudio(dto: StudioDto) {
     const hash = await argon.hash(dto.password);
@@ -60,12 +66,13 @@ export class AuthService {
     }
   }
 
-  async signin(dto: AuthDto, isStudio: boolean) {
-    const user = isStudio
-      ? await this.prisma.studio.findUnique({
-          where: { email: dto.email },
-        })
-      : await this.prisma.client.findUnique({ where: { email: dto.email } });
+  async signin(dto: AuthDto, typeOfUser: userType) {
+    const user =
+      typeOfUser === 'studio'
+        ? await this.prisma.studio.findUnique({
+            where: { email: dto.email },
+          })
+        : await this.prisma.client.findUnique({ where: { email: dto.email } });
 
     if (!user) throw new ForbiddenException('Incorrect email or password');
 
@@ -74,8 +81,25 @@ export class AuthService {
     if (!isPaswordCorrect)
       throw new ForbiddenException('Incorrect email or password.');
 
-    delete user.hash;
+    return this.signToken(user.id, user.email, typeOfUser);
+  }
 
-    return user;
+  async signToken(
+    userId: number,
+    email: string,
+    typeOfUser: userType,
+  ): Promise<{ access_token: string }> {
+    const payload = {
+      sub: userId,
+      email,
+      typeOfUser,
+    };
+
+    const access_token = await this.jwt.signAsync(payload, {
+      expiresIn: '15m',
+      secret: this.config.get('JWT_SECRET'),
+    });
+
+    return { access_token };
   }
 }
