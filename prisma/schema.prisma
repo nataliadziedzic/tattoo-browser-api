@@ -34,9 +34,9 @@ model Client {
   email String @unique
   hash  String
 
-  firstName      String
-  lastName       String?
-  city           String
-  techniques     String[]
-  profilePicture String?
+  firstName           String
+  lastName            String?
+  city                String
+  preferredTechniques String[]
+  profilePicture      String?
 }

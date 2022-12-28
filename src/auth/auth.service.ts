@@ -1,15 +1,40 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
+import { Client, Studio } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
+import * as argon from 'argon2';
+
+import { PrismaService } from '../prisma/prisma.service';
 import { ClientDto } from '../dto/client.dto';
 import { StudioDto } from '../dto/studio.dto';
 import { AuthDto } from './dto/auth.dto';
 
 @Injectable()
 export class AuthService {
+  constructor(private prisma: PrismaService) {}
   // Studio handlers
 
   async signupAsStudio(dto: StudioDto) {
-    console.log(dto);
-    return 'Success! You signed up as a studio!';
+    const hash = await argon.hash(dto.password);
+    delete Object.assign(dto, { hash })['password'];
+
+    try {
+      const user = await this.prisma.studio.create({
+        data: {
+          ...(dto as unknown as Studio),
+        },
+      });
+      delete user.hash;
+      return user;
+    } catch (error) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ForbiddenException('Credentials taken.');
+      } else {
+        throw error;
+      }
+    }
   }
 
   async signinAsStudio(dto: AuthDto) {
@@ -20,8 +45,27 @@ export class AuthService {
   // Client handlers
 
   async signupAsClient(dto: ClientDto) {
-    console.log(dto);
-    return 'Success! You signed up as a client!';
+    const hash = await argon.hash(dto.password);
+    delete Object.assign(dto, { hash })['password'];
+
+    try {
+      const user = await this.prisma.client.create({
+        data: {
+          ...(dto as unknown as Client),
+        },
+      });
+      delete user.hash;
+      return user;
+    } catch (error) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ForbiddenException('Credentials taken.');
+      } else {
+        throw error;
+      }
+    }
   }
 
   async signinAsClient(dto: AuthDto) {
