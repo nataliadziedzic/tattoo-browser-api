@@ -11,7 +11,6 @@ import { AuthDto } from './dto/auth.dto';
 @Injectable()
 export class AuthService {
   constructor(private prisma: PrismaService) {}
-  // Studio handlers
 
   async signupAsStudio(dto: StudioDto) {
     const hash = await argon.hash(dto.password);
@@ -37,25 +36,6 @@ export class AuthService {
     }
   }
 
-  async signinAsStudio(dto: AuthDto) {
-    const user = await this.prisma.studio.findUnique({
-      where: { email: dto.email },
-    });
-
-    if (!user) throw new ForbiddenException('Incorrect email or password');
-
-    const isPaswordCorrect = await argon.verify(user.hash, dto.password);
-
-    if (!isPaswordCorrect)
-      throw new ForbiddenException('Incorrect email or password.');
-
-    delete user.hash;
-
-    return user;
-  }
-
-  // Client handlers
-
   async signupAsClient(dto: ClientDto) {
     const hash = await argon.hash(dto.password);
     delete Object.assign(dto, { hash })['password'];
@@ -80,10 +60,12 @@ export class AuthService {
     }
   }
 
-  async signinAsClient(dto: AuthDto) {
-    const user = await this.prisma.client.findUnique({
-      where: { email: dto.email },
-    });
+  async signin(dto: AuthDto, isStudio: boolean) {
+    const user = isStudio
+      ? await this.prisma.studio.findUnique({
+          where: { email: dto.email },
+        })
+      : await this.prisma.client.findUnique({ where: { email: dto.email } });
 
     if (!user) throw new ForbiddenException('Incorrect email or password');
 
