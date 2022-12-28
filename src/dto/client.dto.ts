@@ -22,7 +22,7 @@ export class ClientDto {
 
   @IsOptional()
   @IsString()
-  lastName: string;
+  lastName?: string;
 
   @IsNotEmpty()
   @IsString()
@@ -30,9 +30,9 @@ export class ClientDto {
 
   @IsOptional()
   @IsArray()
-  preferredTechniques: string[];
+  preferredTechniques?: string[];
 
   @IsOptional()
   @IsString()
-  profilePicture: string;
+  profilePicture?: string;
 }

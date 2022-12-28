@@ -22,7 +22,7 @@ export class StudioDto {
 
   @IsOptional()
   @IsString()
-  description: string;
+  description?: string;
 
   @IsNotEmpty()
   @IsString()
