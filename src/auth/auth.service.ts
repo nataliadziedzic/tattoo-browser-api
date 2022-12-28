@@ -38,8 +38,20 @@ export class AuthService {
   }
 
   async signinAsStudio(dto: AuthDto) {
-    console.log(dto);
-    return 'You signed in as a studio!';
+    const user = await this.prisma.studio.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (!user) throw new ForbiddenException('Incorrect email or password');
+
+    const isPaswordCorrect = await argon.verify(user.hash, dto.password);
+
+    if (!isPaswordCorrect)
+      throw new ForbiddenException('Incorrect email or password.');
+
+    delete user.hash;
+
+    return user;
   }
 
   // Client handlers
@@ -69,7 +81,19 @@ export class AuthService {
   }
 
   async signinAsClient(dto: AuthDto) {
-    console.log(dto);
-    return 'You signed in as a client!';
+    const user = await this.prisma.client.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (!user) throw new ForbiddenException('Incorrect email or password');
+
+    const isPaswordCorrect = await argon.verify(user.hash, dto.password);
+
+    if (!isPaswordCorrect)
+      throw new ForbiddenException('Incorrect email or password.');
+
+    delete user.hash;
+
+    return user;
   }
 }
